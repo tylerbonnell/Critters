@@ -1,12 +1,23 @@
 function Bear() {
   this.toString = function() {
-    return 'x';
+    return 'b';
   };
   this.getMove = function(info) {
     if (info.getFront() == Neighbor.OTHER)
       return Action.INFECT;
     if (info.getFront() == Neighbor.EMPTY)
       return Action.HOP;
+    return Action.RIGHT;
+  };
+};
+
+function FlyTrap() {
+  this.toString = function() {
+    return 'f';
+  };
+  this.getMove = function(info) {
+    if (info.getFront() == Neighbor.OTHER)
+      return Action.INFECT;
     return Action.RIGHT;
   };
 };
@@ -27,9 +38,10 @@ window.onload = function() {
       availableSpots.push({"x": x, "y": y});
   }
   shuffle(availableSpots);
-  addCritter(Bear, 30);
+  addCritter(Bear, 50);
+  addCritter(FlyTrap, 50);
   display();
-  setGameLoop(1000);
+  setGameLoop(50);
 };
 
 var Direction = {
@@ -71,53 +83,74 @@ function CritterInfo(critter) {
                       critterAt(critter.x + 1, critter.y),
                       critterAt(critter.x, critter.y + 1),
                       critterAt(critter.x - 1, critter.y)];
-  this.getFront = function() { return this.getNESW(critter.direction); };
-  this.getRight = function() { return this.getNESW(critter.direction + 1); };
-  this.getBack = function() { return this.getNESW(critter.direction + 2); };
-  this.getLeft = function() { return this.getNESW(critter.direction + 3); };
+  this.getFront = function() { return this.getNESW(0); };
+  this.getRight = function() { return this.getNESW(1); };
+  this.getBack = function() { return this.getNESW(2); };
+  this.getLeft = function() { return this.getNESW(3); };
   this.getNESW = function(direction) {
-    return compareCritters(critter, aaround[(critter.direction + direction) % 4]);
+    return compareCritters(critter, surroundings[(critter.direction + direction) % 4]);
   }
   this.getDirection = function() {
     return critter.direction;
   };
-  this.getFrontDirection = function() { return this.getNESWDirection(critter.direction); };
-  this.getRightDirection = function() { return this.getNESWDirection(critter.direction + 1); };
-  this.getBackDirection = function() { return this.getNESWDirection(critter.direction + 2); };
-  this.getLeftDirection = function() { return this.getNESWDirection(critter.direction + 3); };
+  this.getFrontDirection = function() { return this.getNESWDirection(0); };
+  this.getRightDirection = function() { return this.getNESWDirection(1); };
+  this.getBackDirection = function() { return this.getNESWDirection(2); };
+  this.getLeftDirection = function() { return this.getNESWDirection(3); };
   this.getNESWDirection = function(direction) {
-    if (surroundings[critter.direction] == Neighbor.SAME ||
-        surroundings[critter.direction] == Neighbor.OTHER)
+    if (surroundings[(critter.direction + direction) % 4] == Neighbor.SAME ||
+        surroundings[(critter.direction + direction) % 4] == Neighbor.OTHER)
       return CritterInfo(surroundings[(critter.direction + direction) % 4]).getDirection();
     return -1;
   }
 };
 
 function updateCritter(critter) {
-  var info = CritterInfo(critter);
+  var info = new CritterInfo(critter);
   var move = critter.getMove(info);
+  var dx = critter.x;
+  var dy = critter.y;
+  if (critter.direction == Direction.NORTH) dy--;
+  if (critter.direction == Direction.SOUTH) dy++;
+  if (critter.direction == Direction.EAST) dx++;
+  if (critter.direction == Direction.WEST) dx--;
   if (move == Action.HOP) {
-
+    if (info.getFront() == Neighbor.EMPTY &&
+        dx >= 0 && dx < width && dy >= 0 && dy < height) {
+      grid[critter.x][critter.y] = null;
+      grid[dx][dy] = critter;
+      critter.x = dx;
+      critter.y = dy;
+    }
   } else if (move == Action.RIGHT) {
     critter.direction = (critter.direction + 1) % 4;
   } else if (move == Action.LEFT) {
     critter.direction = (critter.direction + 3) % 4;
   } else if (move == Action.INFECT) {
-    
+    if (info.getFront() == Neighbor.OTHER) {
+      var old = grid[dx][dy];
+      var idx = critters.indexOf(old);
+      grid[dx][dy] = new (critter.constructor)();
+      grid[dx][dy].direction = old.direction;
+      grid[dx][dy].x = old.x;
+      grid[dx][dy].y = old.y;
+      critters[idx] = grid[dx][dy];
+    }
   }
 }
 
 function critterAt(x, y) {
-  if (x >= 0 && x < width && y >= 0 && y < height)
+  if (x >= 0 && x < width && y >= 0 && y < height) {
     if (grid[x][y]) return grid[x][y];
     else return Neighbor.EMPTY;
-  else return Neighbor.WALL;
+  }
+  return Neighbor.WALL;
 }
 
 function compareCritters(critter, critter2) {
   if (critter2 == Neighbor.EMPTY || critter2 == Neighbor.WALL)
     return critter2;
-  else if (obj1.getClass().equals(obj2.getClass()))
+  else if (critter.constructor.name == critter2.constructor.name)
     return Neighbor.SAME;
   else
     return Neighbor.OTHER;
