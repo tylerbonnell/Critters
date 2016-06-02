@@ -1,49 +1,3 @@
-function Bear() {
-  this.toString = function() {
-    return 'b';
-  };
-  this.getMove = function(info) {
-    if (info.getFront() == Neighbor.OTHER)
-      return Action.INFECT;
-    if (info.getFront() == Neighbor.EMPTY)
-      return Action.HOP;
-    return Action.RIGHT;
-  };
-};
-
-function FlyTrap() {
-  this.toString = function() {
-    return 'f';
-  };
-  this.getMove = function(info) {
-    if (info.getFront() == Neighbor.OTHER)
-      return Action.INFECT;
-    return Action.RIGHT;
-  };
-};
-
-
-
-var width = 80;
-var height = 30;
-var grid = new Array(width);
-var availableSpots = [];
-var critters = [];
-var interval;
-
-window.onload = function() {
-  for (var x = 0; x < width; x++) {
-    grid[x] = new Array(height);
-    for (var y = 0; y < height; y++)
-      availableSpots.push({"x": x, "y": y});
-  }
-  shuffle(availableSpots);
-  addCritter(Bear, 50);
-  addCritter(FlyTrap, 50);
-  display();
-  setGameLoop(50);
-};
-
 var Direction = {
   NORTH: 0,
   EAST: 1,
@@ -63,6 +17,28 @@ var Neighbor = {
   EMPTY: 1,
   SAME: 2,
   OTHER: 3,
+};
+
+(function () {
+
+var width = 80;
+var height = 30;
+var grid = new Array(width);
+var availableSpots = [];
+var critters = [];
+var interval;
+
+window.onload = function() {
+  for (var x = 0; x < width; x++) {
+    grid[x] = new Array(height);
+    for (var y = 0; y < height; y++)
+      availableSpots.push({"x": x, "y": y});
+  }
+  shuffle(availableSpots);
+  addCritter(Bear, 30);
+  addCritter(FlyTrap, 30);
+  display();
+  setGameLoop(30);
 };
 
 function setGameLoop(rate) {
@@ -130,7 +106,7 @@ function updateCritter(critter) {
     if (info.getFront() == Neighbor.OTHER) {
       var old = grid[dx][dy];
       var idx = critters.indexOf(old);
-      grid[dx][dy] = new (critter.constructor)();
+      grid[dx][dy] = new critter.constructor();
       grid[dx][dy].direction = old.direction;
       grid[dx][dy].x = old.x;
       grid[dx][dy].y = old.y;
@@ -197,3 +173,5 @@ function shuffle(arr) {
     arr[spot] = temp;
   }
 }
+
+})();
